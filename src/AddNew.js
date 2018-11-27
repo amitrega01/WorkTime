@@ -9,9 +9,14 @@ import {
     TextInput,
 } from 'react-native'
 
-let ID = function () {
-	return '_' + Math.random().toString(36).substr(2, 9);
-  };
+let ID = function() {
+    return (
+        '_' +
+        Math.random()
+            .toString(36)
+            .substr(2, 9)
+    )
+}
 
 import firebase from 'firebase'
 var config = {
@@ -40,6 +45,45 @@ export default class AddNew extends Component {
         this.setState({
             dataPracy: stringDate,
         })
+    }
+    obliczCzasPracy(t1, t2) {
+        let h1 = ''
+        let h2 = ''
+        let m1 = ''
+        let m2 = ''
+        if (t1.length == 4) {
+            h1 = t1.substring(0, 1)
+        } else h1 = t1.substring(0, 2)
+        if (t2.length == 4) {
+            h2 = t2.substring(0, 1)
+        } else h2 = t2.substring(0, 2)
+        m1 = t1.substring(t1.length - 2, t1.length)
+        m2 = t2.substring(t2.length - 2, t2.length)
+
+        let h = h1 - h2
+        let m = m1 - m2
+
+        if (m < 0) {
+            h--
+            m = 60 + m
+        }
+        if (m < 10) return h + ':0' + m
+        else return h + ':' + m
+    }
+    obliczDniowke(t1, t2, stawka) {
+        let czas = this.obliczCzasPracy(t1, t2, stawka)
+        let h = ''
+        let m = ''
+        let s = ''
+        if (stawka[stawka.length - 1] == 'h') {
+            s = stawka.substring(0, stawka.length - 4)
+        } else s = stawka
+        if (czas.length == 4) {
+            h = czas.substring(0, 1)
+        } else h = czas.substring(0, 2)
+        m = czas.substring(czas.length - 2, czas.length)
+        let mPart = ((m / 15).toPrecision(1) * 15) / 60
+        return (h * s + mPart * s).toString()
     }
     async openAndroidDatePicker() {
         try {
@@ -97,7 +141,7 @@ export default class AddNew extends Component {
     render() {
         return (
             <View style={styles.container}>
-                <Text style={styles.header}>Zanotuj pracę</Text>
+                <Text style={styles.header}>Dodawanie wpisu</Text>
                 <View style={styles.pole}>
                     <Text style={styles.inputTextHeader}>Data:</Text>
                     <TouchableOpacity
@@ -121,7 +165,6 @@ export default class AddNew extends Component {
                     </TouchableOpacity>
                 </View>
 
-                
                 <View style={styles.pole}>
                     <Text style={styles.inputTextHeader}>Do:</Text>
                     <TouchableOpacity
@@ -133,7 +176,7 @@ export default class AddNew extends Component {
                         <Text style={styles.date}>{this.state.do}</Text>
                     </TouchableOpacity>
                 </View>
-				<View style={styles.pole}>
+                <View style={styles.pole}>
                     <Text style={styles.inputTextHeader}>Stawka:</Text>
                     <TouchableOpacity style={{ flex: 3, alignItems: 'center' }}>
                         <TextInput
@@ -159,24 +202,39 @@ export default class AddNew extends Component {
                         </TextInput>
                     </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.button}
-				onPress={() => {
-					//dodawanie do 
-					let path = 'worktimes/'+ID();
-					firebase.database().ref(path).set({
-			data: Date.parse(this.state.dataPracy),
-			od: this.state.od,
-			do: this.state.do,
-			stawka: this.state.stawka
-		}).then((data) => {
-			console.log('data', data);
-		}).catch((error) => {
-			console.log('error',error)
-		})
-				}}>
-				{/* //tutaj powrocic do home */}
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => {
+                        //dodawanie do
+                        let path = 'worktimes/' + ID()
+                        firebase
+                            .database()
+                            .ref(path)
+                            .set({
+                                data: Date.parse(this.state.dataPracy),
+                                od: this.state.od,
+                                do: this.state.do,
+                                stawka: this.state.stawka,
+                                czasPracy: this.obliczCzasPracy(
+                                    this.state.do,
+                                    this.state.od
+                                ),
+                                dniowka: this.obliczDniowke(
+                                    this.state.do,
+                                    this.state.od,
+                                    this.state.stawka
+                                ),
+                            })
+                            .then(data => {
+                                console.log('data', data)
+                            })
+                            .catch(error => {
+                                console.log('error', error)
+                            })
+                    }}
+                >
+                    {/* //tutaj powrocic do home */}
                     <Text style={styles.buttonText}>Dodaj</Text>
-					
                 </TouchableOpacity>
             </View>
         )
@@ -185,44 +243,53 @@ export default class AddNew extends Component {
 
 const styles = StyleSheet.create({
     container: {
-        paddingTop: 16,
-        backgroundColor: '#000',
+        backgroundColor: '#FAFAFA',
         height: 100 + '%',
     },
     header: {
+        padding: 16,
         fontSize: 32,
-        color: '#fff',
+        color: '#000',
         fontWeight: 'bold',
         textAlign: 'center',
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+
+        elevation: 5,
     },
     pole: {
         flexDirection: 'row',
-        margin: 16,
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 1,
+        borderColor: '#D9D9D9',
+        borderBottomWidth: 1,
     },
     inputTextHeader: {
         flex: 1,
         fontSize: 18,
-        color: '#fff',
+        color: '#000',
         padding: 16,
         fontWeight: 'bold',
     },
     date: {
         fontSize: 18,
-        color: '#eee',
+        color: '#000',
         padding: 16,
     },
     button: {
-        backgroundColor: '#fff',
+        backgroundColor: '#607D8B',
         margin: 16,
-        borderRadius: 10,
+        borderRadius: 100,
         padding: 16,
         alignContent: 'center',
         justifyContent: 'center',
     },
     buttonText: {
+        color: '#fff',
         alignSelf: 'center',
         fontWeight: 'bold',
         fontSize: 18,
