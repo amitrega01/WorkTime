@@ -19,13 +19,24 @@ let ID = function() {
 }
 
 import firebase from 'firebase'
+require('firebase/firestore')
 var config = {
+    apiKey: 'AIzaSyA8wSqWjBWUlv9e60_BJchKMs3H7xyuE20',
+    authDomain: 'moj-super-projekt.firebaseapp.com',
     databaseURL: 'https://moj-super-projekt.firebaseio.com',
     projectId: 'moj-super-projekt',
+    storageBucket: 'moj-super-projekt.appspot.com',
+    messagingSenderId: '722895876897',
 }
+
 if (!firebase.apps.length) {
     firebase.initializeApp(config)
 }
+var db = firebase.firestore()
+db.settings({
+    timestampsInSnapshots: true,
+})
+
 let koncowka = 'zł/h'
 let today = new Date()
 let stringDate = today.toISOString().substring(0, 10)
@@ -92,7 +103,7 @@ export default class AddNew extends Component {
             })
             if (action == DatePickerAndroid.dateSetAction) {
                 this.setState({
-                    dataPracy: year + '-' + month + '-' + day,
+                    dataPracy: year + '-' + month+1 + '-' + day,
                 })
             }
         } catch ({ code, message }) {
@@ -206,14 +217,11 @@ export default class AddNew extends Component {
                     style={styles.button}
                     onPress={() => {
                         //dodawanie do
-                        let path = 'worktimes/' + ID()
-                        firebase
-                            .database()
-                            .ref(path)
-                            .set({
+                        db.collection('worktimes')
+                            .add({
                                 data: Date.parse(this.state.dataPracy),
-                                od: this.state.od,
-                                do: this.state.do,
+                                odT: this.state.od,
+                                doT: this.state.do,
                                 stawka: this.state.stawka,
                                 czasPracy: this.obliczCzasPracy(
                                     this.state.do,
@@ -225,12 +233,17 @@ export default class AddNew extends Component {
                                     this.state.stawka
                                 ),
                             })
-                            .then(data => {
-                                console.log('data', data)
+                            .then(function(docRef) {
+                                console.log(
+                                    'Document written with ID: ',
+                                    docRef.id
+                                )
                             })
-                            .catch(error => {
-                                console.log('error', error)
+                            .catch(function(error) {
+                                console.error('Error adding document: ', error)
                             })
+
+                        
                     }}
                 >
                     {/* //tutaj powrocic do home */}
